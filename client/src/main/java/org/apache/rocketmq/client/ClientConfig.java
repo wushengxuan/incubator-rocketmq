@@ -27,21 +27,37 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 public class ClientConfig {
     public static final String SEND_MESSAGE_WITH_VIP_CHANNEL_PROPERTY = "com.rocketmq.sendMessageWithVIPChannel";
     private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY, System.getenv(MixAll.NAMESRV_ADDR_ENV));
-    private String clientIP = RemotingUtil.getLocalAddress();
-    private String instanceName = System.getProperty("rocketmq.client.name", "DEFAULT");
-    private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
+
     /**
-     * Pulling topic information interval from the named server
+     * 本机IP
+     */
+    private String clientIP = RemotingUtil.getLocalAddress();
+
+    /**
+     * 客户端实例名称，客户端创建的多个Producer，Consumer实际是共用一个内部实例（这个实例包含网络连接，线程资源等）
+     */
+    private String instanceName = System.getProperty("rocketmq.client.name", "DEFAULT");
+
+    /**
+     * 通信层异步回调线程数
+     */
+    private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * 轮询Name Server 间隔时间，单位毫秒
      */
     private int pollNameServerInteval = 1000 * 30;
+
     /**
-     * Heartbeat interval in microseconds with message broker
+     * 向Broker发送心跳间隔时间，单位毫秒
      */
     private int heartbeatBrokerInterval = 1000 * 30;
+
     /**
-     * Offset persistent interval for consumer
+     * 持久化Consumer消费进度间隔时间，单位毫秒
      */
     private int persistConsumerOffsetInterval = 1000 * 5;
+
     private boolean unitMode = false;
     private String unitName;
     private boolean vipChannelEnabled = Boolean.parseBoolean(System.getProperty(SEND_MESSAGE_WITH_VIP_CHANNEL_PROPERTY, "true"));

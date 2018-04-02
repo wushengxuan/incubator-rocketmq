@@ -22,8 +22,16 @@ import org.apache.rocketmq.remoting.RPCHook;
 
 public class TransactionMQProducer extends DefaultMQProducer {
     private TransactionCheckListener transactionCheckListener;
+
+    /**
+     * Broker回查Producer事务状态时，线程池大小
+     */
     private int checkThreadPoolMinSize = 1;
     private int checkThreadPoolMaxSize = 1;
+
+    /**
+     * Broker回查Producer事务状态时，Producer本地缓冲请求队列大小
+     */
     private int checkRequestHoldMax = 2000;
 
     public TransactionMQProducer() {
@@ -59,6 +67,9 @@ public class TransactionMQProducer extends DefaultMQProducer {
         return this.defaultMQProducerImpl.sendMessageInTransaction(msg, tranExecuter, arg);
     }
 
+    /**
+     * 事物消息回查监听器，如果发送事务消息，必须设置
+     */
     public TransactionCheckListener getTransactionCheckListener() {
         return transactionCheckListener;
     }

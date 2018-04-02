@@ -104,12 +104,13 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     /**
      * Indicate whether to retry another broker on sending failure internally.
+     * 如果发送消息返回sendResult,但是sendStatus!=SEND_OK,是否重试发送
      */
-    // TODO 疑问：作用？？？
     private boolean retryAnotherBrokerWhenNotStoreOK = false;
 
     /**
      * Maximum allowed message size in bytes.
+     * 客户端限制的消息大小，超过报错，同时服务端也会限制（默认128K）
      */
     private int maxMessageSize = 1024 * 1024 * 4; // 4M
 

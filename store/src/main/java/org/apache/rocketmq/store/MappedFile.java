@@ -48,7 +48,7 @@ public class MappedFile extends ReferenceResource {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     /**
-     * TODO
+     * checkpoint文件大小设置为4KB
      */
     public static final int OS_PAGE_SIZE = 1024 * 4;
     /**

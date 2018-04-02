@@ -173,6 +173,7 @@ public class DefaultMessageStore implements MessageStore {
             result = result && this.loadConsumeQueue(); // TODO 待读
 
             if (result) {
+                //创建checkpoint文件
                 this.storeCheckpoint =
                     new StoreCheckpoint(StorePathConfigHelper.getStoreCheckpoint(this.messageStoreConfig.getStorePathRootDir()));
 
@@ -198,6 +199,7 @@ public class DefaultMessageStore implements MessageStore {
      * @throws Exception
      */
     public void start() throws Exception {
+        //启动服务线程
         this.flushConsumeQueueService.start();
         this.commitLog.start();
         this.storeStatsService.start();
