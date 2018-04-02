@@ -69,13 +69,58 @@ public class RemotingCommand {
         }
     }
 
+//roccketmq网络通信协议
+    /**
+     * Request ：请求操作码，对应RequestCode，通过switch匹配处理逻辑
+     * Response：相应码，对应ResponseCode，0表示成功，非0表示错误码
+     */
     private int code;
+
+    /**
+     * Request ：标记请求方的语言类型，默认JAVA
+     * Response：应答方所使用的语言，默认JAVA
+     */
     private LanguageCode language = LanguageCode.JAVA;
+
+    /**
+     * Request ：请求方的版本号
+     * Response：应答方的版本号
+     */
     private int version = 0;
+
+    /**
+     * Request ：同一个连接上标记是哪次请求。
+     *           服务响应时会返回这个请求标示码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求
+     * Response：应答方不做修改，原值返回
+     * 该值的类型是AtomicInteger，获取了当前值，然后再Increment
+     */
     private int opaque = requestId.getAndIncrement();
+
+    /**
+     * 标记通信的类型，借助下面两个字段，通过2位的bit mask来标记
+     * private static final int RPC_TYPE = 0;
+     * private static final int RPC_ONEWAY = 1
+     * 低位为0表示是请求方，为1是表示应答方
+     * 高位为0时表示普通的需要等待结果的RPC请求，高位为1时表示单向请求
+     */
     private int flag = 0;
+
+    /**
+     * Request ：传输的自定义文本
+     * Response：错误详细描述信息
+     */
     private String remark;
+
+    /**
+     * Request ：请求自定义字段
+     * Response：应答自定义字段
+     */
     private HashMap<String, String> extFields;
+
+    /**
+     * 自定义请求头
+     * 当数据需要网络传输时，customHeader会转为extFields
+     */
     private transient CommandCustomHeader customHeader;
 
     private SerializeType serializeTypeCurrentRPC = serializeTypeConfigInThisServer;

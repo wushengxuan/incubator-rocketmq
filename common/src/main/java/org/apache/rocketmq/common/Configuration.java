@@ -73,11 +73,11 @@ public class Configuration {
             readWriteLock.writeLock().lockInterruptibly();
 
             try {
-
+                //通过反射将Config对象转为Properties Property的 k,v -> 对象的变量名,变量的值
                 Properties registerProps = MixAll.object2Properties(configObject);
-
+                // 将registerProps中的元素merge到成员变量allConfigs中
                 merge(registerProps, this.allConfigs);
-
+                // 将Config对象添加成员变量configObjectList中
                 configObjectList.add(configObject);
             } finally {
                 readWriteLock.writeLock().unlock();

@@ -47,17 +47,29 @@ public class NamesrvStartup {
     }
 
     public static NamesrvController main0(String[] args) {
+        //设置namesrv版本号
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
+        /*
+          Netty接收缓冲区大小
+          设置的是ChannelOption.SO_SNDBUF参数
+          该参数对应于套接字选项中的SO_SNDBUF
+         */
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE)) {
             NettySystemConfig.socketSndbufSize = 4096;
         }
 
+        /*
+          Netty发送缓冲区大小
+          设置的是ChannelOption.SO_RCVBUF参数
+          该参数对应于套接字选项中的SO_RCVBUF
+         */
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_RCVBUF_SIZE)) {
             NettySystemConfig.socketRcvbufSize = 4096;
         }
 
         try {
+            // FastJson版本冲突检测，已被注释
             //PackageConflictDetect.detectFastjson();
 
             Options options = ServerUtil.buildCommandlineOptions(new Options());
@@ -68,10 +80,15 @@ public class NamesrvStartup {
                 System.exit(-1);
                 return null;
             }
-
+            //初始化 namesrvConfig和nettyServerConfig
             final NamesrvConfig namesrvConfig = new NamesrvConfig();
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
             nettyServerConfig.setListenPort(9876);
+
+            /*
+             * 如果命令带有-c参数，则读取文件内容，转换成全局Properties
+             * 通过反射，将Properties中的值赋值给NamesrvConfig、NettyServerConfig
+             */
             if (commandLine.hasOption('c')) {
                 String file = commandLine.getOptionValue('c');
                 if (file != null) {
@@ -87,13 +104,20 @@ public class NamesrvStartup {
                     in.close();
                 }
             }
-
+            // 如果命令带有-p参数，则打印出NamesrvConfig、NettyServerConfig的属性
             if (commandLine.hasOption('p')) {
                 MixAll.printObjectProperties(null, namesrvConfig);
                 MixAll.printObjectProperties(null, nettyServerConfig);
                 System.exit(0);
             }
 
+            /*
+             * 解析命令行参数，并加载到namesrvConfig配置中
+             * 通过debug发现，这一行在这里没用
+             * commandLine2Properties()方法中将参数全名和属性值转换成Properties
+             * 目前支持的参数的全名为configFile、help、namesrvAddr、printConfigItem
+             * 但是NamesrvConfig类中没有与之对应的set方法，所以不知道意义何在
+             */
             MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), namesrvConfig);
 
             if (null == namesrvConfig.getRocketmqHome()) {
@@ -102,6 +126,10 @@ public class NamesrvStartup {
                 System.exit(-2);
             }
 
+            /*
+             * 初始化Logback日志工厂
+             * RocketMQ默认使用Logback作为日志输出
+             */
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(lc);
@@ -112,6 +140,7 @@ public class NamesrvStartup {
             MixAll.printObjectProperties(log, namesrvConfig);
             MixAll.printObjectProperties(log, nettyServerConfig);
 
+            //初始化NamesrvController 该类是Name Server的主要控制类
             final NamesrvController controller = new NamesrvController(namesrvConfig, nettyServerConfig);
 
             // remember all configs to prevent discard
@@ -122,7 +151,7 @@ public class NamesrvStartup {
                 controller.shutdown();
                 System.exit(-3);
             }
-
+            // 注册ShutdownHook
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 private volatile boolean hasShutdown = false;
                 private AtomicInteger shutdownTimes = new AtomicInteger(0);
@@ -141,7 +170,7 @@ public class NamesrvStartup {
                     }
                 }
             }, "ShutdownHook"));
-
+            //启动netty服务
             controller.start();
 
             String tip = "The Name Server boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();

@@ -37,7 +37,7 @@ public class QueueData implements Comparable<QueueData> {
      */
     private int writeQueueNums;
     /**
-     * 读写权限
+     * Topic的读写权限(2是写 4是读 6是读写)
      */
     private int perm;
     private int topicSynFlag;

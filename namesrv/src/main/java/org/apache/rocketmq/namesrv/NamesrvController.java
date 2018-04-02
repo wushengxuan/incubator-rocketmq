@@ -58,29 +58,39 @@ public class NamesrvController {
     private Configuration configuration;
 
     public NamesrvController(NamesrvConfig namesrvConfig, NettyServerConfig nettyServerConfig) {
+        //name server配置
         this.namesrvConfig = namesrvConfig;
+        //netty配置
         this.nettyServerConfig = nettyServerConfig;
+        //kv配置管理
         this.kvConfigManager = new KVConfigManager(this);
+        //路由信息管理
         this.routeInfoManager = new RouteInfoManager();
+        //Broker连接事件处理服务
         this.brokerHousekeepingService = new BrokerHousekeepingService(this);
         this.configuration = new Configuration(
             log,
             this.namesrvConfig, this.nettyServerConfig
         );
+        //设置Configuration对象的storePathField字段 此处该字段被赋值为NamesrvConfig是的configStorePath字段
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    /**
+     * 初始化NamesrvController
+     * @return
+     */
     public boolean initialize() {
         //如果有kv.json就解析并加载到内存configTable
         this.kvConfigManager.load();
         //初始化多个线程池
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
-
+        //workerThread线程池，默认线程数为8
         this.remotingExecutor =
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
-
+        // 注册Netty处理逻辑
         this.registerProcessor();
-        //检测无效broker并删除的线程
+        //延迟5秒启动、每10秒执行一次的定时任务 用于扫描不存活的Broker
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -88,7 +98,7 @@ public class NamesrvController {
                 NamesrvController.this.routeInfoManager.scanNotActiveBroker();
             }
         }, 5, 10, TimeUnit.SECONDS);
-
+        //延迟1分钟启动、每10分钟执行一次的定时任务 作用是打印出kvConfig配置
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -100,6 +110,10 @@ public class NamesrvController {
         return true;
     }
 
+    /**
+     * 注册Netty服务端业务处理逻辑
+     * NamesrvConfig的clusterTest字段暂时不知道何用，先就看false分支
+     */
     private void registerProcessor() {
         if (namesrvConfig.isClusterTest()) {
 

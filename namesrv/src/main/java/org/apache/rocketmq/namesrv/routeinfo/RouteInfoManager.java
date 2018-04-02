@@ -56,11 +56,11 @@ public class RouteInfoManager {
      */
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
     /**
-     * 集群 与 broker集合 Map
+     * 集群以及属于该集群的Broker列表
      */
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
     /**
-     * broker地址 与 broker连接信息 Map
+     * 存货的broker地址列表
      */
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
     /**
@@ -490,11 +490,21 @@ public class RouteInfoManager {
         }
     }
 
+    /**
+     * 清除离线的Broker信息
+     * @param remoteAddr Broker的地址
+     * @param channel Broker和Name Server之间的连接通道，是一个NioSocketChannel实例
+     */
     public void onChannelDestroy(String remoteAddr, Channel channel) {
         String brokerAddrFound = null;
         if (channel != null) {
             try {
                 try {
+                    /*
+                     * 通过channel从brokerLiveTable中找出对应的Broker地址
+                     * 由于只是读，所以只需要获取readLock()
+                     * 若该Broker已经从存活的Broker地址列表中被清除，则直接使用remoteAddr
+                     */
                     this.lock.readLock().lockInterruptibly();
                     Iterator<Entry<String, BrokerLiveInfo>> itBrokerLiveTable =
                         this.brokerLiveTable.entrySet().iterator();
@@ -524,8 +534,16 @@ public class RouteInfoManager {
             try {
                 try {
                     this.lock.writeLock().lockInterruptibly();
+                    //从存活的broker列表中清除该broker
                     this.brokerLiveTable.remove(brokerAddrFound);
+                    //从Filter Server中清除该Broker
                     this.filterServerTable.remove(brokerAddrFound);
+                    /*
+                     * 通过brokerAddrFound从Broker列表中找到该Broker，并删除
+                     * 删除的是BrokerData.brokerAddrs的元素
+                     * 上述操作之后，如果BrokerData.brokerAddrs空了，则从Broker列表中将Broker Name对应的元素删除
+                     * 删除的是成员变量brokerAddrTable的元素
+                     */
                     String brokerNameFound = null;
                     boolean removeBrokerName = false;
                     Iterator<Entry<String, BrokerData>> itBrokerAddrTable =
@@ -555,6 +573,12 @@ public class RouteInfoManager {
                         }
                     }
 
+                    /*
+                     * 如果该Broker Name下没有节点提供服务(已经从brokerAddrTable中清除)
+                     * 从Broker集群中删除该Broker信息
+                     * 如果集群下没有提供服务的Broker，则从集群列表中删除该进群信息
+                     * 删除的是成员变量clusterAddrTable的元素
+                     */
                     if (brokerNameFound != null && removeBrokerName) {
                         Iterator<Entry<String, Set<String>>> it = this.clusterAddrTable.entrySet().iterator();
                         while (it.hasNext()) {
@@ -577,6 +601,11 @@ public class RouteInfoManager {
                         }
                     }
 
+                    /*
+                     * 如果该Broker Name下没有节点提供服务(已经从brokerAddrTable中清除)
+                     * 从Topic列表中删除该Broker Name的信息，删除的是topicQueueTable的value的元素
+                     * 如果Topic没有可提供服务的Broker了，则删除Topic的信息，删除的是topicQueueTable的元素
+                     */
                     if (removeBrokerName) {
                         Iterator<Entry<String, List<QueueData>>> itTopicQueueTable =
                             this.topicQueueTable.entrySet().iterator();
@@ -820,6 +849,7 @@ class BrokerLiveInfo {
     private Channel channel;
     /**
      * ha服务器地址
+     * 是Slave从Master拉取数据时链接的地址，由brokerIp2+HA端口构成
      */
     private String haServerAddr;
 

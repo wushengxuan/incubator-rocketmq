@@ -63,7 +63,12 @@ public abstract class NettyRemotingAbstract {
 
     protected Pair<NettyRequestProcessor, ExecutorService> defaultRequestProcessor;
 
+    /**
+     * @param permitsOneway 控制单向信号量
+     * @param permitsAsync  控制异步信号量
+     */
     public NettyRemotingAbstract(final int permitsOneway, final int permitsAsync) {
+        //创建公平的信号量
         this.semaphoreOneway = new Semaphore(permitsOneway, true);
         this.semaphoreAsync = new Semaphore(permitsAsync, true);
     }

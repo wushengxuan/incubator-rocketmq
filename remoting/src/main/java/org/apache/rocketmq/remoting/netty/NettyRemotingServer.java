@@ -77,16 +77,18 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
     }
 
     public NettyRemotingServer(final NettyServerConfig nettyServerConfig, final ChannelEventListener channelEventListener) {
+        // 设置单向信号量和异步信号量
         super(nettyServerConfig.getServerOnewaySemaphoreValue(), nettyServerConfig.getServerAsyncSemaphoreValue());
+        // Netty原生类，Netty的主要启动类
         this.serverBootstrap = new ServerBootstrap();
         this.nettyServerConfig = nettyServerConfig;
         this.channelEventListener = channelEventListener;
-
+        // 判断Netty服务异步回调线程池线程数量，默认值为4
         int publicThreadNums = nettyServerConfig.getServerCallbackExecutorThreads();
         if (publicThreadNums <= 0) {
             publicThreadNums = 4;
         }
-
+        // 初始化线程数固定的线程池，并自定义线程名称
         this.publicExecutor = Executors.newFixedThreadPool(publicThreadNums, new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
 
@@ -95,7 +97,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 return new Thread(r, "NettyServerPublicExecutor_" + this.threadIndex.incrementAndGet());
             }
         });
-
+        //创建单个线程的NIO线程组该EventLoop线程组负责处理客户端的TCP连接请求
         this.eventLoopGroupBoss = new NioEventLoopGroup(1, new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
 
@@ -104,7 +106,11 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 return new Thread(r, String.format("NettyBoss_%d", this.threadIndex.incrementAndGet()));
             }
         });
-
+        /*
+         * 创建固定数量的线程组，默认3个
+         * 如果是Linux平台，并且useEpollNativeSelector属性为true时使用EpollEventLoopGroup，否则使用NioEventLoopGroup
+         * 该EventLoop线程组真正负责I/O读写操作
+         */
         if (RemotingUtil.isLinuxPlatform() //
             && nettyServerConfig.isUseEpollNativeSelector()) {
             //基于多路IO复用模型 2.6版本之前的linux操作系统没有epoll方法
@@ -133,6 +139,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
     @Override
     public void start() {
+        // 构造执行编码相关任务的线程池，默认线程数为8
         this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(
             nettyServerConfig.getServerWorkerThreads(),
             new ThreadFactory() {
@@ -144,45 +151,80 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     return new Thread(r, "NettyServerCodecThread_" + this.threadIndex.incrementAndGet());
                 }
             });
-
+        // 初始化Netty启动类
         ServerBootstrap childHandler =
-            this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector).channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 1024)
-                .option(ChannelOption.SO_REUSEADDR, true)
-                .option(ChannelOption.SO_KEEPALIVE, false)
-                .childOption(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
-                .option(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
-                .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
-                .childHandler(new ChannelInitializer<SocketChannel>() {
+            this.serverBootstrap
+                    // group方法设置NIO线程组
+                    .group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
+                    // 设置Channel为NioServerSocketChannel
+                    .channel(NioServerSocketChannel.class)
+                    // 服务端接收客户端连接数上限
+                    .option(ChannelOption.SO_BACKLOG, 1024)
+                    // 允许公用本地地址和端口
+                    .option(ChannelOption.SO_REUSEADDR, true)
+                    // 不允许长连接
+                    .option(ChannelOption.SO_KEEPALIVE, false)
+                    // 禁止使用Nagle算法，使用于小数据即时传输
+                    .childOption(ChannelOption.TCP_NODELAY, true)
+                    // 设置发送缓冲区大小
+                    .option(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
+                    // 设置接缓冲区大小
+                    .option(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
+                    // 设置Netty监听的端口
+                    .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
+                    // 绑定I/O事件的处理类
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(
-                            defaultEventExecutorGroup,
-                            new NettyEncoder(),
-                            new NettyDecoder(),
-                            new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),
-                            new NettyConnetManageHandler(),
-                            new NettyServerHandler());
+                                // 执行编码相关任务的线程池
+                                defaultEventExecutorGroup,
+                                // 编码器
+                                new NettyEncoder(),
+                                //解码器，基于LengthFieldBasedFrameDecoder支持自动的TCP粘包和板报处理，
+                                // 只需要给出标识消息长度的字段偏移量和消息长度自身所占的字节数
+                                new NettyDecoder(),
+                                /*
+                                 * 心跳检测，默认120秒
+                                 * 当客户端连接空闲指定时间之后，触发userEventTriggered()方法
+                                 * userEventTriggered()方法在NettyConnetManageHandler类中实现，具体行为就是关闭空闲的通道
+                                 *
+                                 */
+                                new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),
+                                // Netty连接管理Handler
+                                new NettyConnetManageHandler(),
+                                // 具体的业务处理Handler
+                                new NettyServerHandler());
                     }
                 });
-
+        // 使用Netty内存池，至于这里的内存池不详细分析了，以后如果看Netty源码再说
         if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
             childHandler.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
         }
 
         try {
+            // 绑定端口，同步等待成功
             ChannelFuture sync = this.serverBootstrap.bind().sync();
+            // 获取绑定的地址和端口
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             this.port = addr.getPort();
         } catch (InterruptedException e1) {
             throw new RuntimeException("this.serverBootstrap.bind().sync() InterruptedException", e1);
         }
 
+        /*
+         * 如果channelEventListener不为空，则启动nettyEventExecuter
+         * 在Name Server启动环节，此处的channelEventListener是BrokerHousekeepingService实例
+         * nettyEventExecuter的作用就是根据Channel的状态来调用channelEventListener的方法
+         */
         if (this.channelEventListener != null) {
             this.nettyEventExecuter.start();
         }
 
+        /*
+         * 定时任务，3秒后启动，每秒执行一次
+         * 用于处理responseTable，来实现异步回调，支持客户端invokeAsync
+         */
         this.timer.scheduleAtFixedRate(new TimerTask() {
 
             @Override

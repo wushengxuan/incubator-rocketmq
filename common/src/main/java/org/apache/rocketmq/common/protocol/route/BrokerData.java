@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class BrokerData implements Comparable<BrokerData> {
     /**
-     * 集群名
+     * Broker所属集群名
      */
     private String cluster;
     /**
@@ -38,7 +38,7 @@ public class BrokerData implements Comparable<BrokerData> {
      */
     private String brokerName;
     /**
-     * broker角色编号 和 broker地址 Map
+     * brokerId 和 broker地址  同一个brokerName下可以有一个Master和多个Slave
      */
     private HashMap<Long/* brokerId */, String/* broker address */> brokerAddrs;
 
