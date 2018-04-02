@@ -107,6 +107,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
         if (RemotingUtil.isLinuxPlatform() //
             && nettyServerConfig.isUseEpollNativeSelector()) {
+            //基于多路IO复用模型 2.6版本之前的linux操作系统没有epoll方法
             this.eventLoopGroupSelector = new EpollEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
                 private AtomicInteger threadIndex = new AtomicInteger(0);
                 private int threadTotal = nettyServerConfig.getServerSelectorThreads();
@@ -117,6 +118,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 }
             });
         } else {
+            //基于异步IO模型
             this.eventLoopGroupSelector = new NioEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
                 private AtomicInteger threadIndex = new AtomicInteger(0);
                 private int threadTotal = nettyServerConfig.getServerSelectorThreads();

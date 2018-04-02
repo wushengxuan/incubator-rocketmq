@@ -71,16 +71,16 @@ public class NamesrvController {
     }
 
     public boolean initialize() {
-
+        //如果有kv.json就解析并加载到内存configTable
         this.kvConfigManager.load();
-
+        //初始化多个线程池
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
         this.remotingExecutor =
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
 
         this.registerProcessor();
-
+        //检测无效broker并删除的线程
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
