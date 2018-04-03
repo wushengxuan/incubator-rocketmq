@@ -26,11 +26,11 @@ package org.apache.rocketmq.common.protocol.heartbeat;
  */
 public enum MessageModel {
     /**
-     * broadcast
+     * 广播消费(consume group所有消费者都会接受到队列)
      */
     BROADCASTING("BROADCASTING"),
     /**
-     * clustering
+     * 集群消费(默认 一个consume group中只有一个消费者会收到队列)
      */
     CLUSTERING("CLUSTERING");
 

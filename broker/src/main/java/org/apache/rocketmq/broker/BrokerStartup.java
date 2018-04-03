@@ -182,7 +182,7 @@ public class BrokerStartup {
             lc.reset();
             configurator.doConfigure(brokerConfig.getRocketmqHome() + "/conf/logback_broker.xml");
             log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
-
+            log.info("12345678");
             MixAll.printObjectProperties(log, brokerConfig);
             MixAll.printObjectProperties(log, nettyServerConfig);
             MixAll.printObjectProperties(log, nettyClientConfig);

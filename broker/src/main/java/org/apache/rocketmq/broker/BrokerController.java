@@ -70,7 +70,12 @@ public class BrokerController {
     private final NettyServerConfig nettyServerConfig;
     private final NettyClientConfig nettyClientConfig;
     private final MessageStoreConfig messageStoreConfig;
+
+    /**
+     * 消费进度管理器
+     */
     private final ConsumerOffsetManager consumerOffsetManager;
+
     private final ConsumerManager consumerManager;
     private final ProducerManager producerManager;
     private final ClientHousekeepingService clientHousekeepingService;
@@ -92,8 +97,18 @@ public class BrokerController {
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
         "BrokerControllerScheduledThread"));
     private final SlaveSynchronize slaveSynchronize;
+
+    /**
+     * 发送消息线程队列
+     */
     private final BlockingQueue<Runnable> sendThreadPoolQueue;
+
+    /**
+     * 拉取消息线程队列
+     */
     private final BlockingQueue<Runnable> pullThreadPoolQueue;
+
+
     private final BlockingQueue<Runnable> clientManagerThreadPoolQueue;
     private final BlockingQueue<Runnable> consumerManagerThreadPoolQueue;
     private final FilterServerManager filterServerManager;
@@ -237,6 +252,7 @@ public class BrokerController {
             // TODO remove in future
             final long initialDelay = UtilAll.computNextMorningTimeMillis() - System.currentTimeMillis();
             final long period = 1000 * 60 * 60 * 24;
+            //启动后的隔天0点开始 每天执行一次
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {

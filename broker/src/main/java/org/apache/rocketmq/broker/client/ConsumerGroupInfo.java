@@ -38,7 +38,15 @@ public class ConsumerGroupInfo {
         new ConcurrentHashMap<String, SubscriptionData>();
     private final ConcurrentHashMap<Channel, ClientChannelInfo> channelInfoTable =
         new ConcurrentHashMap<Channel, ClientChannelInfo>(16);
+
+    /**
+     * 消费类型
+     */
     private volatile ConsumeType consumeType;
+
+    /**
+     * 消费模式
+     */
     private volatile MessageModel messageModel;
     private volatile ConsumeFromWhere consumeFromWhere;
     private volatile long lastUpdateTimestamp = System.currentTimeMillis();

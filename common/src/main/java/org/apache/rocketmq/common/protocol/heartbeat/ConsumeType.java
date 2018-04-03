@@ -22,8 +22,14 @@ package org.apache.rocketmq.common.protocol.heartbeat;
 
 public enum ConsumeType {
 
+    /**
+     * 主动消费
+     */
     CONSUME_ACTIVELY("PULL"),
 
+    /**
+     * 被动消费(首先要注册消费监听器，当监听器处触发后才开始消费消息)
+     */
     CONSUME_PASSIVELY("PUSH");
 
     private String typeCN;

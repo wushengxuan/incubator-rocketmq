@@ -20,6 +20,9 @@ import io.netty.channel.Channel;
 import java.util.List;
 import org.apache.rocketmq.broker.BrokerController;
 
+/**
+ * 收到Broker告知的Consume变化通知时
+ */
 public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListener {
     private final BrokerController brokerController;
 
