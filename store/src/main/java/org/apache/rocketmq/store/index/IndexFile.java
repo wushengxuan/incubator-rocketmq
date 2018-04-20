@@ -89,19 +89,31 @@ public class IndexFile {
         return this.mappedFile.destroy(intervalForcibly);
     }
 
+    /**
+     * IndexFile添加索引
+     * @param key
+     * @param phyOffset
+     * @param storeTimestamp
+     * @return
+     */
     public boolean putKey(final String key, final long phyOffset, final long storeTimestamp) {
+        //1. 判断该索引文件的索引数小于最大的索引数，如果>=最大索引数，IndexService就会尝试新建一个索引文件
         if (this.indexHeader.getIndexCount() < this.indexNum) {
+            //2. 计算该message key的hash值
             int keyHash = indexKeyHashMethod(key);
+            //3. 根据message key的hash值散列到某个hash slot里
             int slotPos = keyHash % this.hashSlotNum;
+            //4. 计算得到该hash slot的实际文件位置Position
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
 
             FileLock fileLock = null;
 
             try {
-
+                //5. 根据该hash slot的实际文件位置absSlotPos得到slot里的值
                 // fileLock = this.fileChannel.lock(absSlotPos, hashSlotSize,
                 // false);
                 int slotValue = this.mappedByteBuffer.getInt(absSlotPos);
+                //6. 数据校验及修正
                 if (slotValue <= invalidIndex || slotValue > this.indexHeader.getIndexCount()) {
                     slotValue = invalidIndex;
                 }
@@ -117,16 +129,18 @@ public class IndexFile {
                 } else if (timeDiff < 0) {
                     timeDiff = 0;
                 }
-
+                //7. 计算当前消息索引具体的存储位置(Append模式)
                 int absIndexPos =
                     IndexHeader.INDEX_HEADER_SIZE + this.hashSlotNum * hashSlotSize
                         + this.indexHeader.getIndexCount() * indexSize;
-
+                //8. 存入该消息索引
                 this.mappedByteBuffer.putInt(absIndexPos, keyHash);
                 this.mappedByteBuffer.putLong(absIndexPos + 4, phyOffset);
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8, (int) timeDiff);
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8 + 4, slotValue);
-
+                //9. 关键之处：在该key hash slot处存入当前消息索引的位置，下次通过该key进行搜索时
+                //会找到该key hash slot -> slot value -> curIndex ->
+                //if(curIndex.prevIndex>0) pre index (一直循环 直至该curIndex.prevIndex==0就停止)
                 this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
 
                 if (this.indexHeader.getIndexCount() <= 1) {
@@ -189,8 +203,11 @@ public class IndexFile {
     public void selectPhyOffset(final List<Long> phyOffsets, final String key, final int maxNum,
         final long begin, final long end, boolean lock) {
         if (this.mappedFile.hold()) {
+            //1. 计算该key的hash
             int keyHash = indexKeyHashMethod(key);
+            //2. 计算该hash value 对应的hash slot位置
             int slotPos = keyHash % this.hashSlotNum;
+            //3. 计算该hash value 对应的hash slot物理文件位置
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
 
             FileLock fileLock = null;
@@ -199,30 +216,33 @@ public class IndexFile {
                     // fileLock = this.fileChannel.lock(absSlotPos,
                     // hashSlotSize, true);
                 }
-
+                //4. 取出该hash slot 的值
                 int slotValue = this.mappedByteBuffer.getInt(absSlotPos);
                 // if (fileLock != null) {
                 // fileLock.release();
                 // fileLock = null;
                 // }
-
+                //5. 该slot value <= 0 就代表没有该key对应的消息索引,直接结束搜索
+                //   该slot value > maxIndexCount 就代表该key对应的消息索引超过最大限制，数据有误,直接结束搜索
                 if (slotValue <= invalidIndex || slotValue > this.indexHeader.getIndexCount()
                     || this.indexHeader.getIndexCount() <= 1) {
                     // TODO NOTFOUND
                 } else {
+                    //6. 从当前slot value 开始搜索
                     for (int nextIndexToRead = slotValue;;) {
                         if (phyOffsets.size() >= maxNum) {
                             break;
                         }
-
+                        //7. 找到当前slot value(也就是index count)物理文件位置
                         int absIndexPos =
                             IndexHeader.INDEX_HEADER_SIZE + this.hashSlotNum * hashSlotSize
                                 + nextIndexToRead * indexSize;
-
+                        //8. 读取消息索引数据
                         int keyHashRead = this.mappedByteBuffer.getInt(absIndexPos);
                         long phyOffsetRead = this.mappedByteBuffer.getLong(absIndexPos + 4);
 
                         long timeDiff = (long) this.mappedByteBuffer.getInt(absIndexPos + 4 + 8);
+                        //9. 获取该消息索引的上一个消息索引index(可以看成链表的prev 指向上一个链节点的引用)
                         int prevIndexRead = this.mappedByteBuffer.getInt(absIndexPos + 4 + 8 + 4);
 
                         if (timeDiff < 0) {
@@ -233,7 +253,7 @@ public class IndexFile {
 
                         long timeRead = this.indexHeader.getBeginTimestamp() + timeDiff;
                         boolean timeMatched = (timeRead >= begin) && (timeRead <= end);
-
+                        //10. 数据校验比对 hash值和落盘时间
                         if (keyHash == keyHashRead && timeMatched) {
                             phyOffsets.add(phyOffsetRead);
                         }

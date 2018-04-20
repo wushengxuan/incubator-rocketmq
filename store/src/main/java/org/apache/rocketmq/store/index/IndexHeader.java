@@ -47,22 +47,23 @@ public class IndexHeader {
      */
     private static int endPhyoffsetIndex = 24;
 
-    /**
-     * 该索引文件目前的hash slot的个数 (pos: 32-35) 4bytes
-     */
     private static int hashSlotcountIndex = 32;
 
-    /**
-     * 该索引文件目前的索引个数 (pos: 36-39) 4bytes
-     */
     private static int indexCountIndex = 36;
     private final ByteBuffer byteBuffer;
     private AtomicLong beginTimestamp = new AtomicLong(0);
     private AtomicLong endTimestamp = new AtomicLong(0);
     private AtomicLong beginPhyOffset = new AtomicLong(0);
     private AtomicLong endPhyOffset = new AtomicLong(0);
+
+    /**
+     * 该索引文件目前的hash slot的个数 (pos: 32-35) 4bytes
+     */
     private AtomicInteger hashSlotCount = new AtomicInteger(0);
 
+    /**
+     * 该索引文件目前的索引个数 (pos: 36-39) 4bytes
+     */
     private AtomicInteger indexCount = new AtomicInteger(1);
 
     public IndexHeader(final ByteBuffer byteBuffer) {
