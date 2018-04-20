@@ -175,22 +175,25 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Flow control threshold
-     * 最大持有消息数量
+     * 本地队列最大持有消息数量
      */
     private int pullThresholdForQueue = 1000;
 
     /**
      * Message pull Interval
+     * 消息拉取间隔
      */
     private long pullInterval = 0;
 
     /**
      * Batch consumption size
+     * 监听器每次接受本地队列的消息条数
      */
     private int consumeMessageBatchMaxSize = 1;
 
     /**
      * Batch pull size
+     * 批量拉消息，一次最多拉多少条
      */
     private int pullBatchSize = 32;
 

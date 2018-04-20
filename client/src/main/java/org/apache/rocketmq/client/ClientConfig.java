@@ -54,7 +54,7 @@ public class ClientConfig {
     private int heartbeatBrokerInterval = 1000 * 30;
 
     /**
-     * 持久化Consumer消费进度间隔时间，单位毫秒
+     * 持久化Consumer消费进度到对应的broker上的间隔时间，单位毫秒
      */
     private int persistConsumerOffsetInterval = 1000 * 5;
 

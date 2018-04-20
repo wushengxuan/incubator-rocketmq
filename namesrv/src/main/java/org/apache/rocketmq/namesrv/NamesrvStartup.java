@@ -80,8 +80,8 @@ public class NamesrvStartup {
                 System.exit(-1);
                 return null;
             }
-            //初始化 namesrvConfig和nettyServerConfig
             final NamesrvConfig namesrvConfig = new NamesrvConfig();
+            //初始化 namesrvConfig和nettyServerConfig
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
             nettyServerConfig.setListenPort(9876);
 

@@ -835,18 +835,22 @@ public class RouteInfoManager {
  * Broker 连接信息
  */
 class BrokerLiveInfo {
+
     /**
      * 最后更新时间
      */
     private long lastUpdateTimestamp;
+
     /**
      * 数据版本号
      */
     private DataVersion dataVersion;
+
     /**
      * 连接信息
      */
     private Channel channel;
+
     /**
      * ha服务器地址
      * 是Slave从Master拉取数据时链接的地址，由brokerIp2+HA端口构成
