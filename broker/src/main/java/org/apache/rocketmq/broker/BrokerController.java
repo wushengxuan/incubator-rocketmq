@@ -185,12 +185,16 @@ public class BrokerController {
         return pullThreadPoolQueue;
     }
 
+    /**
+     * 所有配置信息都加载好之后开始初始化
+     */
     public boolean initialize() throws CloneNotSupportedException {
         boolean result = true;
-
+        //加载并解析topics.json文件
         result = result && this.topicConfigManager.load();
-
+        //加载topic的消费进度
         result = result && this.consumerOffsetManager.load();
+        //加载订阅分组
         result = result && this.subscriptionGroupManager.load();
 
         if (result) {
@@ -287,6 +291,9 @@ public class BrokerController {
                 }
             }, 3, 3, TimeUnit.MINUTES);
 
+            /**
+             * 轮询发送队列和接收队列的大小
+             */
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {

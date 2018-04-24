@@ -104,6 +104,9 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
         }
     }
 
+    /**
+     * 获取队列的消费进度
+     */
     public long fetchConsumeOffset(MessageQueue mq, boolean fromStore) throws MQClientException {
         this.makeSureStateOK();
         return this.offsetStore.readOffset(mq, fromStore ? ReadOffsetType.READ_FROM_STORE : ReadOffsetType.MEMORY_FIRST_THEN_STORE);

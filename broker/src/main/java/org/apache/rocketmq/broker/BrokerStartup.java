@@ -103,6 +103,7 @@ public class BrokerStartup {
                 messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
             }
 
+            //命令行参数配置
             if (commandLine.hasOption('p')) {
                 MixAll.printObjectProperties(null, brokerConfig);
                 MixAll.printObjectProperties(null, nettyServerConfig);
@@ -138,6 +139,7 @@ public class BrokerStartup {
 
             MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), brokerConfig);
 
+            //环境变量设置不正确退出
             if (null == brokerConfig.getRocketmqHome()) {
                 System.out.printf("Please set the " + MixAll.ROCKETMQ_HOME_ENV
                     + " variable in your environment to match the location of the RocketMQ installation");
@@ -160,6 +162,7 @@ public class BrokerStartup {
             }
 
             switch (messageStoreConfig.getBrokerRole()) {
+                //不管是同步双写或者一步复制都是master的模式 master的brokerId设置为0
                 case ASYNC_MASTER:
                 case SYNC_MASTER:
                     brokerConfig.setBrokerId(MixAll.MASTER_ID);
@@ -174,7 +177,7 @@ public class BrokerStartup {
                 default:
                     break;
             }
-
+            //设置master对slave的监听端口
             messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1);
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             JoranConfigurator configurator = new JoranConfigurator();
@@ -182,7 +185,6 @@ public class BrokerStartup {
             lc.reset();
             configurator.doConfigure(brokerConfig.getRocketmqHome() + "/conf/logback_broker.xml");
             log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
-            log.info("12345678");
             MixAll.printObjectProperties(log, brokerConfig);
             MixAll.printObjectProperties(log, nettyServerConfig);
             MixAll.printObjectProperties(log, nettyClientConfig);

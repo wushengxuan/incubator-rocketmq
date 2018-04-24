@@ -61,8 +61,14 @@ public class RequestCode {
 
     public static final int VIEW_MESSAGE_BY_ID = 33;
 
+    /**
+     * 发送心跳包的请求
+     */
     public static final int HEART_BEAT = 34;
 
+    /**
+     * 注销客户端的请求
+     */
     public static final int UNREGISTER_CLIENT = 35;
 
     public static final int CONSUMER_SEND_MSG_BACK = 36;

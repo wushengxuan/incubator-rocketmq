@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ *
+ */
 public class TransientStorePool {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -45,11 +48,16 @@ public class TransientStorePool {
 
     /**
      * It's a heavy init method.
+     * 通过TransientStorePool来初始化DirectBuffer池
+     * DirectBuffer是直接分配堆外内存的实现
+     * 物理内存和swap的区别
      */
     public void init() {
         for (int i = 0; i < poolSize; i++) {
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(fileSize);
 
+            //通过mlock可以将进程使用的部分或者全部的地址空间锁定在物理内存中，防止其被交换到swap空间。
+            //对时间敏感的应用会希望全部使用物理内存，提高数据访问和操作的效率。
             final long address = ((DirectBuffer) byteBuffer).address();
             Pointer pointer = new Pointer(address);
             LibC.INSTANCE.mlock(pointer, new NativeLong(fileSize));

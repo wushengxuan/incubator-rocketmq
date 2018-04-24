@@ -39,6 +39,10 @@ public class AllocateMappedFileService extends ServiceThread {
     private static int waitTimeOut = 1000 * 5;
     private ConcurrentHashMap<String, AllocateRequest> requestTable =
         new ConcurrentHashMap<String, AllocateRequest>();
+
+    /**
+     * 定义一个优先级阻塞队列保存
+     */
     private PriorityBlockingQueue<AllocateRequest> requestQueue =
         new PriorityBlockingQueue<AllocateRequest>();
     private volatile boolean hasException = false;
@@ -48,7 +52,9 @@ public class AllocateMappedFileService extends ServiceThread {
         this.messageStore = messageStore;
     }
 
-    // TODO 疑问：待读
+    /**
+     * 同步，生产分配请求，等待异步线程处理，最多5s，完成创建MappedFile的请求
+     */
     public MappedFile putRequestAndReturnMappedFile(String nextFilePath, String nextNextFilePath, int fileSize) {
         int canSubmitRequests = 2;
         if (this.messageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
@@ -150,6 +156,7 @@ public class AllocateMappedFileService extends ServiceThread {
 
     /**
      * Only interrupted by the external thread, will return false
+     * 进行内存映射文件操作
      */
     private boolean mmapOperation() {
         boolean isSuccess = false;

@@ -93,6 +93,9 @@ public class ConsumerManager {
         }
     }
 
+    /**
+     * 注册cousumer到broker
+     */
     public boolean registerConsumer(final String group, final ClientChannelInfo clientChannelInfo,
         ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
         final Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable) {

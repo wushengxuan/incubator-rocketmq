@@ -265,10 +265,13 @@ public class MappedFile extends ReferenceResource {
         int currentPos = this.wrotePosition.get();
 
         if (currentPos < this.fileSize) {
+            //在当前位置对缓冲区进行分片
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
             byteBuffer.position(currentPos);
+            //消息写入mappedByteBuffer
             AppendMessageResult result =
                 cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos, msg);
+            //更新写入位置
             this.wrotePosition.addAndGet(result.getWroteBytes());
             this.storeTimestamp = result.getStoreTimestamp();
             return result;
@@ -287,13 +290,17 @@ public class MappedFile extends ReferenceResource {
     }
 
     /**
-     * TODO 疑问：调用方是
+     * 提供给commitlog使用，传入消息内容，然后CommitLog按照规定的格式构造二进制信息并顺序写
      */
     public boolean appendMessage(final byte[] data) {
+        //找出当前要的写入位置
         int currentPos = this.wrotePosition.get();
-
+        //如果当前位置加上要写入的数据大小小于等于文件大小，则说明剩余空间足够写入
         if ((currentPos + data.length) <= this.fileSize) {
             try {
+                //则由内存对象 mappedByteBuffer 创建一个指向同一块内存的ByteBuffer 对象，
+                // 并将内存对象的写入指针指向写入位置；然后将该二进制信
+                //息写入该内存对象，同时将 wrotePostion 值增加消息的大小；
                 this.fileChannel.position(currentPos);
                 this.fileChannel.write(ByteBuffer.wrap(data));
             } catch (Throwable e) {
@@ -339,9 +346,8 @@ public class MappedFile extends ReferenceResource {
     }
 
     /**
-     * commit
+     * 消息刷盘操作
      * 当{@link #writeBuffer}为null时，直接返回{@link #wrotePosition}
-     *
      * @param commitLeastPages commit最小页数
      * @return 当前commit位置
      */
@@ -429,11 +435,11 @@ public class MappedFile extends ReferenceResource {
     protected boolean isAbleToCommit(final int commitLeastPages) {
         int flush = this.committedPosition.get();
         int write = this.wrotePosition.get();
-
+        //文件已写满
         if (this.isFull()) {
             return true;
         }
-
+        //超过最小刷盘页数
         if (commitLeastPages > 0) {
             return ((write / OS_PAGE_SIZE) - (flush / OS_PAGE_SIZE)) >= commitLeastPages;
         }

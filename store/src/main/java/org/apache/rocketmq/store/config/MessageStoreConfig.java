@@ -226,8 +226,13 @@ public class MessageStoreConfig {
      * Slave落后Master超过此值，则认为存在异常
      */
     private int haSlaveFallbehindMax = 1024 * 1024 * 256;
+
+    /**
+     * 默认采用异步复制 实现master-slave的消息同步
+     */
     @ImportantField
     private BrokerRole brokerRole = BrokerRole.ASYNC_MASTER;
+
     @ImportantField
     private FlushDiskType flushDiskType = FlushDiskType.ASYNC_FLUSH;
 
@@ -260,6 +265,9 @@ public class MessageStoreConfig {
     private long osPageCacheBusyTimeOutMills = 1000;
     private int defaultQueryMaxNum = 32;
 
+    /**
+     * 为true时文件持久化采用filechannel 否则采用内存映射mappedByteBuffer
+     */
     @ImportantField
     private boolean transientStorePoolEnable = false;
     private int transientStorePoolSize = 5;
@@ -703,7 +711,7 @@ public class MessageStoreConfig {
 
     /**
      * Enable transient commitLog store poll only if transientStorePoolEnable is true and the FlushDiskType is ASYNC_FLUSH
-     *
+     * 文件持久化存储的方式(异步刷盘 && transientStorePoolEnable == true && MASTER节点)
      * @return <tt>true</tt> or <tt>false</tt>
      */
     public boolean isTransientStorePoolEnable() {

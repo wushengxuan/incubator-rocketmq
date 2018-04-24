@@ -99,6 +99,7 @@ public class CommitLog {
      * 添加消息 螺旋锁（通过while循环实现）
      */
     private AtomicBoolean putMessageSpinLock = new AtomicBoolean(true);
+
     /**
      * 添加消息重入锁
      */
@@ -604,9 +605,9 @@ public class CommitLog {
 
         // 定时消息处理
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
-        if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE//
+        if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
             || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
-            // Delay Delivery
+            // 延迟消息
             if (msg.getDelayTimeLevel() > 0) {
                 if (msg.getDelayTimeLevel() > this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) {
                     msg.setDelayTimeLevel(this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());
@@ -634,19 +635,19 @@ public class CommitLog {
         MappedFile unlockMappedFile = null;
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
 
-        // 获取写入锁
-        lockForPutMessage(); //spin...
+        // 获取写入锁(通过一个可重入锁和一个自旋锁实现)
+        lockForPutMessage();
         try {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
             this.beginTimeInLock = beginLockTimestamp;
 
-            // Here settings are stored timestamp, in order to ensure an orderly
-            // global
+            // 设置写入的时间戳 为了保证消息的顺序
             msg.setStoreTimestamp(beginLockTimestamp);
 
-            // 当不存在映射文件时，进行创建
+            // 当不存在映射文件或者映射文件已经写满时，进行创建
             if (null == mappedFile || mappedFile.isFull()) {
-                mappedFile = this.mappedFileQueue.getLastMappedFile(0); // Mark: NewFile may be cause noise
+                // Mark: NewFile may be cause noise
+                mappedFile = this.mappedFileQueue.getLastMappedFile(0);
             }
             if (null == mappedFile) {
                 log.error("create maped file1 error, topic: " + msg.getTopic() + " clientAddr: " + msg.getBornHostString());
@@ -654,7 +655,7 @@ public class CommitLog {
                 return new PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, null);
             }
 
-            // 存储消息
+            // 存储消息核心方法
             result = mappedFile.appendMessage(msg, this.appendMessageCallback);
             switch (result.getStatus()) {
                 case PUT_OK:
@@ -797,7 +798,7 @@ public class CommitLog {
     }
 
     /**
-     * TODO
+     * 随机读操作
      * @param offset
      * @param size
      * @return

@@ -293,7 +293,7 @@ public class MQClientInstance {
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
 
-        // 定时拉取 Topic路由配置
+        // 定时从namesrv拉取Topic路由配置
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
