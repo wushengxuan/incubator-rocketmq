@@ -1224,32 +1224,40 @@ public class CommitLog {
     }
 
     /**
-     * 写入消息到Buffer默认实现
+     * 写入消息到Buffer默认实现类
      */
     class DefaultAppendMessageCallback implements AppendMessageCallback {
         // File at the end of the minimum fixed length empty
+        /**
+         * 文件末尾空字符的最小数量
+         */
         private static final int END_FILE_MIN_BLANK_LENGTH = 4 + 4;
+
         /**
          * 存储在内存中的消息编号字节Buffer
          */
         private final ByteBuffer msgIdMemory;
+
         /**
          * Store the message content
          * 存储在内存中的消息字节Buffer
          * 当消息传递到{@link #doAppend(long, ByteBuffer, int, MessageExtBrokerInner)}方法时，最终写到该参数
          */
         private final ByteBuffer msgStoreItemMemory;
+
         /**
          * The maximum length of the message
          * 消息最大长度
          */
         private final int maxMessageSize;
+
         /**
          * Build Message Key
          * {@link #topicQueueTable}的key
          * 计算方式：topic + "-" + queueId
          */
         private final StringBuilder keyBuilder = new StringBuilder();
+
         /**
          * host字节buffer
          * 用于重复计算host的字节内容
@@ -1266,10 +1274,14 @@ public class CommitLog {
             return msgStoreItemMemory;
         }
 
+
+        /**
+         * 消息写入MappedByteBuffer
+         */
         public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank, final MessageExtBrokerInner msgInner) {
             // STORETIMESTAMP + STOREHOSTADDRESS + OFFSET <br>
 
-            // PHY OFFSET
+            // PHY OFFSET(文件开始的偏移+切片中存储的位置)
             long wroteOffset = fileFromOffset + byteBuffer.position();
 
             // 计算commitLog里的msgId
@@ -1289,6 +1301,7 @@ public class CommitLog {
             }
 
             // Transaction messages that require special handling // TODO 疑问：用途
+            //事务消息类型判断
             final int tranType = MessageSysFlag.getTransactionValue(msgInner.getSysFlag());
             switch (tranType) {
                 // Prepared and Rollback message is not consumed, will not enter the
@@ -1322,16 +1335,14 @@ public class CommitLog {
                 return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED);
             }
 
-            // Determines whether there is sufficient(足够) free space
+            // 确定是否有足够的空间
             if ((msgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) {
                 this.resetByteBuffer(this.msgStoreItemMemory, maxBlank);
-                // 1 TOTAL_SIZE
+                // 1 TOTAL_SIZE存储一下commitlog还剩下的最大剩余空间的值
                 this.msgStoreItemMemory.putInt(maxBlank);
                 // 2 MAGIC_CODE
                 this.msgStoreItemMemory.putInt(CommitLog.BLANK_MAGIC_CODE);
                 // 3 The remaining space may be any value
-                //
-
                 // Here the length of the specially set maxBlank
                 final long beginTimeMills = CommitLog.this.defaultMessageStore.now();
                 byteBuffer.put(this.msgStoreItemMemory.array(), 0, maxBlank);
