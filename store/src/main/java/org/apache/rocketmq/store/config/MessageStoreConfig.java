@@ -252,6 +252,8 @@ public class MessageStoreConfig {
      */
     @ImportantField
     private boolean cleanFileForciblyEnable = true;
+
+
     private boolean warmMapedFileEnable = false;
 
     /**

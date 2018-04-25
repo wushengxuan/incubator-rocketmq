@@ -80,6 +80,7 @@ public abstract class NettyRemotingAbstract {
     }
 
     public void processMessageReceived(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
+        //rocketmq通信协议信息
         final RemotingCommand cmd = msg;
         if (cmd != null) {
             switch (cmd.getType()) {
@@ -157,6 +158,7 @@ public abstract class NettyRemotingAbstract {
 
             try {
                 final RequestTask requestTask = new RequestTask(run, ctx.channel(), cmd);
+                //异步执行请求到netty服务端的任务
                 pair.getObject2().submit(requestTask);
             } catch (RejectedExecutionException e) {
                 if ((System.currentTimeMillis() % 10000) == 0) {

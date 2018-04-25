@@ -78,6 +78,7 @@ public class HAService {
 
     public boolean isSlaveOK(final long masterPutWhere) {
         boolean result = this.connectionCount.get() > 0;
+        //比较master和slave保存的最大偏移量的差值 小于设定值则返回true
         result =
             result
                 && ((masterPutWhere - this.push2SlaveMaxOffset.get()) < this.defaultMessageStore

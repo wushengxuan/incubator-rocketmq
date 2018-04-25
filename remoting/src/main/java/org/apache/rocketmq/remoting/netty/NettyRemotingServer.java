@@ -335,6 +335,12 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
     class NettyServerHandler extends SimpleChannelInboundHandler<RemotingCommand> {
 
+        /**
+         * netty服务接受request请求
+         * @param ctx
+         * @param msg
+         * @throws Exception
+         */
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
             processMessageReceived(ctx, msg);

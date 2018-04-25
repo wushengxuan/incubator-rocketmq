@@ -24,6 +24,10 @@ public enum PutMessageStatus {
      * 成功
      */
     PUT_OK,
+
+    /**
+     * 刷盘超时
+     */
     FLUSH_DISK_TIMEOUT,
     FLUSH_SLAVE_TIMEOUT,
     SLAVE_NOT_AVAILABLE,

@@ -657,6 +657,9 @@ public class MappedFile extends ReferenceResource {
         }
     }
 
+    /**
+     * 分配完成后对堆外内存分配操作进行解锁
+     */
     public void munlock() {
         final long beginTime = System.currentTimeMillis();
         final long address = ((DirectBuffer) (this.mappedByteBuffer)).address();

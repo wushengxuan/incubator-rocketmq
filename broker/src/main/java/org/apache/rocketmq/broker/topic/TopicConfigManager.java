@@ -389,6 +389,7 @@ public class TopicConfigManager extends ConfigManager {
         if (jsonString != null) {
             TopicConfigSerializeWrapper topicConfigSerializeWrapper =
                 TopicConfigSerializeWrapper.fromJson(jsonString, TopicConfigSerializeWrapper.class);
+            //把文件中的topic信息存入topicConfigTable中
             if (topicConfigSerializeWrapper != null) {
                 this.topicConfigTable.putAll(topicConfigSerializeWrapper.getTopicConfigTable());
                 this.dataVersion.assignNewOne(topicConfigSerializeWrapper.getDataVersion());
